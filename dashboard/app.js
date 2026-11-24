@@ -217,6 +217,8 @@ document.addEventListener('DOMContentLoaded', () => {
   initTabs();
   initThemeToggle();
   initConversation();
+  const bInfo = getBrowserDetails();
+  updateSttDiagnostics(`Browser: ${bInfo.name} | Speech API: ${bInfo.hasSpeechApi ? (bInfo.isReliableSpeech ? 'Supported' : 'Limited (iOS)') : 'Not supported'} | State: Idle | Last: none`);
   initDspControls();
   initPhrasebook();
   initPacks();
@@ -347,10 +349,13 @@ function initConversation() {
     touristInput.placeholder = `Type in ${getLanguageName(tLang)} (e.g. 'How are you?') or tap mic...`;
     providerInput.placeholder = `Type in ${getLanguageName(pLang)} (e.g. 'आप कैसे हैं?') or tap mic...`;
 
+    touristInput.setAttribute('lang', getLocaleTag(tLang));
+    providerInput.setAttribute('lang', getLocaleTag(pLang));
+
     document.getElementById('providerIncomingLabel').textContent = `Translated from Tourist (${getLanguageName(pLang)}):`;
     document.getElementById('touristIncomingLabel').textContent = `Translated from Provider (${getLanguageName(tLang)}):`;
 
-    console.log(`[CONFIG] Languages updated: Tourist=${tLang}, Provider=${pLang}`);
+    console.log(`[CONFIG] Languages updated: Tourist=${tLang} (${getLocaleTag(tLang)}), Provider=${pLang} (${getLocaleTag(pLang)})`);
   }
 
   touristLangSelect.addEventListener('change', updatePlaceholders);
@@ -390,84 +395,200 @@ function initConversation() {
   });
 }
 
+// --- Browser Environment & Diagnostics ---
+function getBrowserDetails() {
+  const ua = navigator.userAgent || '';
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isAndroid = /Android/i.test(ua);
+  const isChrome = /Chrome|CriOS/i.test(ua) && !/Edg/i.test(ua);
+  const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+  const isFirefox = /Firefox|FxiOS/i.test(ua);
+
+  let name = 'Other Browser';
+  if (isIOS) {
+    name = isChrome ? 'Chrome iOS (WebKit)' : isSafari ? 'Safari iOS' : 'iOS Browser';
+  } else if (isAndroid) {
+    name = isChrome ? 'Chrome Android' : 'Android Browser';
+  } else if (isChrome) {
+    name = 'Chrome Desktop';
+  } else if (isSafari) {
+    name = 'Safari Desktop';
+  } else if (isFirefox) {
+    name = 'Firefox';
+  }
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  // On iOS, WebKit webkitSpeechRecognition is heavily restricted / unreliable
+  const isReliableSpeech = !!SpeechRecognition && !isIOS;
+
+  return { name, isIOS, isAndroid, isSafari, hasSpeechApi: !!SpeechRecognition, isReliableSpeech };
+}
+
+function updateSttDiagnostics(info) {
+  const debugText = document.getElementById('sttDebugText');
+  if (debugText) {
+    debugText.textContent = info;
+  }
+}
+
 // Speech Recognition
 function toggleSpeech(speaker) {
   const micBtn = document.getElementById(`${speaker}MicBtn`);
-  
+  const inputEl = document.getElementById(`${speaker}TextInput`);
+  const browserInfo = getBrowserDetails();
+
+  // If already recording for this speaker, stop on second tap
   if (state.activeSpeaker === speaker) {
     if (state.recognition) {
       try { state.recognition.stop(); } catch(e){}
     }
     micBtn.classList.remove('recording');
+    inputEl.classList.remove('listening');
     state.activeSpeaker = null;
+    updateSttDiagnostics(`Browser: ${browserInfo.name} | State: Stopped by tap | Last: user stop`);
     return;
   }
 
+  // If another speaker was active, reset it
   if (state.activeSpeaker) {
-    document.getElementById(`${state.activeSpeaker}MicBtn`).classList.remove('recording');
+    const prevBtn = document.getElementById(`${state.activeSpeaker}MicBtn`);
+    const prevInput = document.getElementById(`${state.activeSpeaker}TextInput`);
+    if (prevBtn) prevBtn.classList.remove('recording');
+    if (prevInput) prevInput.classList.remove('listening');
+    if (state.recognition) {
+      try { state.recognition.abort(); } catch(e){}
+    }
   }
 
-  state.activeSpeaker = speaker;
-  micBtn.classList.add('recording');
-
-  // 1. Detect whether browser supports SpeechRecognition at all
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    console.warn('[STT] SpeechRecognition unavailable in this browser environment.');
-    micBtn.classList.remove('recording');
-    state.activeSpeaker = null;
-    showSpeechError(speaker, 'Voice input is not supported in this browser. Please use Chrome on Android, or type instead.');
+  // 1. Detect unsupported browsers (Safari / all iOS browsers using WebKit)
+  if (browserInfo.isIOS || !browserInfo.hasSpeechApi) {
+    console.warn('[STT] Speech recognition not supported on this device/browser:', browserInfo.name);
+    updateSttDiagnostics(`Browser: ${browserInfo.name} | Speech API: Unsupported | State: Voice Button Disabled`);
+    showSpeechError(speaker, "Voice button is not supported in this browser. Use your keyboard's microphone icon to dictate into the text box, or open this link in Chrome on Android.");
     return;
   }
 
-  // 2. Browser supports SpeechRecognition, but device has no internet
+  // 2. Browser supports SpeechRecognition, but device is offline
   if (!navigator.onLine) {
     console.warn('[STT] Offline: Voice input requires an active internet connection.');
-    micBtn.classList.remove('recording');
-    state.activeSpeaker = null;
-    showSpeechError(speaker, 'Voice input requires an active internet connection. Please type or use the Phrasebook.');
+    updateSttDiagnostics(`Browser: ${browserInfo.name} | Speech API: Supported | State: Offline`);
+    showSpeechError(speaker, "Voice input requires an active internet connection. Please type or use the Phrasebook.");
     return;
   }
 
   const langSelect = document.getElementById(`${speaker}LangSelect`);
+  const langCode = langSelect ? langSelect.value : (speaker === 'tourist' ? 'en' : 'hi');
+  const localeTag = getLocaleTag(langCode);
 
   hideSpeechError(speaker);
+  state.activeSpeaker = speaker;
+  micBtn.classList.add('recording');
+  inputEl.classList.add('listening');
 
+  const originalPlaceholder = inputEl.placeholder;
+  inputEl.placeholder = `Listening in ${getLanguageName(langCode)}... Speak now`;
+  updateSttDiagnostics(`Browser: ${browserInfo.name} | Lang: ${localeTag} | State: Listening... | Last: tap`);
+
+  let finalTranscript = '';
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   const recognition = new SpeechRecognition();
   state.recognition = recognition;
-  recognition.lang = getLocaleTag(langCode);
-  recognition.interimResults = false;
+  recognition.lang = localeTag;
+  recognition.continuous = false;
+  recognition.interimResults = true;
   recognition.maxAlternatives = 1;
 
-  recognition.onresult = (event) => {
-    hideSpeechError(speaker);
-    const transcript = event.results[0][0].transcript;
-    console.log(`[STT RESULT] Recognized speech (${speaker}): "${transcript}"`);
-    micBtn.classList.remove('recording');
-    state.activeSpeaker = null;
-    processUtterance(speaker, transcript);
+  recognition.onstart = () => {
+    console.log(`[STT START] Listening started for ${speaker} (${localeTag})`);
+    updateSttDiagnostics(`Browser: ${browserInfo.name} | Lang: ${localeTag} | State: Mic active, speak now...`);
   };
 
-  recognition.onerror = (err) => {
-    console.warn('[STT ERROR]', err);
+  recognition.onresult = (event) => {
+    let interim = '';
+    for (let i = event.resultIndex; i < event.results.length; ++i) {
+      const part = event.results[i][0].transcript;
+      if (event.results[i].isFinal) {
+        finalTranscript += part;
+      } else {
+        interim += part;
+      }
+    }
+
+    const currentText = (finalTranscript || interim).trim();
+    if (currentText) {
+      inputEl.value = currentText;
+      updateSttDiagnostics(`Browser: ${browserInfo.name} | Lang: ${localeTag} | Interim: "${currentText.slice(0, 30)}"`);
+    }
+  };
+
+  recognition.onerror = (event) => {
+    console.warn('[STT ERROR]', event.error);
     micBtn.classList.remove('recording');
+    inputEl.classList.remove('listening');
+    inputEl.placeholder = originalPlaceholder;
     state.activeSpeaker = null;
-    showSpeechError(speaker, 'Speech recognition failed, please type or retry.');
+
+    let msg = 'Speech recognition failed, please type or retry.';
+    switch (event.error) {
+      case 'not-allowed':
+        msg = 'Microphone permission denied. Please allow microphone access in your browser site settings.';
+        break;
+      case 'no-speech':
+        msg = 'No speech detected. Please tap the mic and try speaking closer to your phone.';
+        break;
+      case 'audio-capture':
+        msg = 'No microphone was found or microphone is busy in another app.';
+        break;
+      case 'network':
+        msg = 'Speech recognition network error. Chrome speech service could not connect.';
+        break;
+      case 'service-not-allowed':
+        msg = 'Speech service not allowed by this device or browser.';
+        break;
+      case 'language-not-supported':
+        msg = `Speech recognition is not supported for ${getLanguageName(langCode)} on this device.`;
+        break;
+      case 'aborted':
+        msg = 'Listening stopped.';
+        break;
+      default:
+        msg = `Speech recognition error (${event.error}). Please type or retry.`;
+    }
+
+    updateSttDiagnostics(`Browser: ${browserInfo.name} | Last Error: ${event.error} | State: Error`);
+    if (event.error !== 'aborted') {
+      showSpeechError(speaker, msg);
+    }
   };
 
   recognition.onend = () => {
+    console.log(`[STT END] Recognition ended for ${speaker}`);
     micBtn.classList.remove('recording');
+    inputEl.classList.remove('listening');
+    inputEl.placeholder = originalPlaceholder;
     state.activeSpeaker = null;
+
+    const textToTranslate = (finalTranscript.trim() || inputEl.value.trim());
+    if (textToTranslate) {
+      console.log(`[STT CAPTURED] Utterance ready for translation: "${textToTranslate}"`);
+      updateSttDiagnostics(`Browser: ${browserInfo.name} | State: Captured "${textToTranslate.slice(0, 20)}" -> Translating...`);
+      processUtterance(speaker, textToTranslate);
+      inputEl.value = '';
+    } else {
+      updateSttDiagnostics(`Browser: ${browserInfo.name} | State: Idle | Last: ended`);
+    }
   };
 
   try {
     recognition.start();
-    console.log(`[STT] Listening for ${speaker} in ${recognition.lang}...`);
-  } catch(e) {
-    console.error('[STT EXCEPTION]', e);
+  } catch (err) {
+    console.error('[STT START FAILED]', err);
     micBtn.classList.remove('recording');
+    inputEl.classList.remove('listening');
+    inputEl.placeholder = originalPlaceholder;
     state.activeSpeaker = null;
-    showSpeechError(speaker, 'Speech recognition failed to start, please type or retry.');
+    updateSttDiagnostics(`Browser: ${browserInfo.name} | Start Error: ${err.message}`);
+    showSpeechError(speaker, 'Microphone could not start. Please retry or check browser permissions.');
   }
 }
 

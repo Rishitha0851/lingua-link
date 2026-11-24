@@ -1,5 +1,5 @@
 // Lingua Link — Service Worker for PWA Offline Caching
-const CACHE_NAME = 'lingua-link-v1';
+const CACHE_NAME = 'lingua-link-v2';
 const STATIC_ASSETS = [
   './',
   './index.html',

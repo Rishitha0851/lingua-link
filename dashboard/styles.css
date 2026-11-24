@@ -1070,6 +1070,33 @@ input:checked + .slider:before { transform: translateX(20px); }
   animation: fadeIn 0.2s ease-in;
 }
 
+.text-input.listening {
+  border-color: #ea4335 !important;
+  box-shadow: 0 0 0 2px rgba(234, 67, 53, 0.25);
+  background-color: rgba(234, 67, 53, 0.05);
+}
+
+.stt-debug-bar {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  background: var(--bg-surface-elevated);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  margin-top: 10px;
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.stt-debug-bar .debug-title {
+  color: var(--primary);
+  font-weight: 600;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }

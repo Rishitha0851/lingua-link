@@ -146,7 +146,7 @@
                 <line x1="12" x2="12" y1="19" y2="22"/>
               </svg>
             </button>
-            <input type="text" class="text-input" id="providerTextInput" placeholder="Type message in Hindi (e.g. 'आप कैसे हैं?') or tap mic...">
+            <input type="text" class="text-input" id="providerTextInput" lang="hi" placeholder="Type message in Hindi (e.g. 'आप कैसे हैं?') or tap mic...">
             <button class="send-btn" id="providerSendBtn">Send</button>
           </div>
         </div>
@@ -201,10 +201,16 @@
                 <line x1="12" x2="12" y1="19" y2="22"/>
               </svg>
             </button>
-            <input type="text" class="text-input" id="touristTextInput" placeholder="Type message in English (e.g. 'How are you?') or tap mic...">
+            <input type="text" class="text-input" id="touristTextInput" lang="en-IN" placeholder="Type message in English (e.g. 'How are you?') or tap mic...">
             <button class="send-btn" id="touristSendBtn">Send</button>
           </div>
         </div>
+      </div>
+
+      <!-- Mobile & Environment STT Diagnostics Bar -->
+      <div class="stt-debug-bar" id="sttDebugBar">
+        <span class="debug-title">Diagnostics:</span>
+        <span id="sttDebugText">Detecting browser environment...</span>
       </div>
     </section>
 
