@@ -215,6 +215,32 @@ def perform_translation(text, from_lang="en", to_lang="hi"):
                 return p["english"]
 
     # Tier 3: Neural Translation via HTTP (Requires Internet)
+    # Provider 1: Google Clients5
+    try:
+        url = f"https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl={from_lang}&tl={to_lang}&q=" + urllib.parse.quote(t_clean)
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+        with urllib.request.urlopen(req, timeout=3.5) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            if isinstance(data, list) and len(data) > 0:
+                res = data[0][0] if isinstance(data[0], list) else data[0]
+                if res and isinstance(res, str):
+                    return res.strip()
+    except Exception as e:
+        pass
+
+    # Provider 2: MyMemory API Fallback
+    try:
+        url = f"https://api.mymemory.translated.net/get?q={urllib.parse.quote(t_clean)}&langpair={from_lang}|{to_lang}"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=3.5) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            res = data.get("responseData", {}).get("translatedText")
+            if res and isinstance(res, str) and "QUERY LENGTH" not in res.upper():
+                return res.strip()
+    except Exception as e:
+        pass
+
+    # Provider 3: Google GTX
     try:
         url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl={from_lang}&tl={to_lang}&dt=t&q=" + urllib.parse.quote(t_clean)
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
@@ -224,10 +250,9 @@ def perform_translation(text, from_lang="en", to_lang="hi"):
             if result:
                 return result.strip()
     except Exception as e:
-        print(f"[TRANSLATE NOTICE] Neural translation offline: {e}")
+        pass
 
-    # Honest Offline Notice for unknown novel sentences when offline:
-    return "Offline: Translation unavailable for unlisted sentences without internet. Please use the Phrasebook or known phrases."
+    return "Translation service unavailable right now, try again or use the Phrasebook."
 
 class LinguaLinkHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):

@@ -101,7 +101,7 @@ const LOCAL_DICTIONARY = {
   },
   "where is the railway station": {
     hi: "रेलवे स्टेशन कहाँ है?",
-    te: "రైల్వే స్టేషన్ ఎక్కడ ఉంది?",
+    te: "రైల్వే स्टेशन ఎక్కడ ఉంది?",
     ta: "ரயில் நிலையம் எங்கே உள்ளது?",
     en: "Where is the railway station?"
   },
@@ -170,6 +170,83 @@ function getPhrasebook() {
   return [];
 }
 
+async function performUpstreamTranslation(text, fromLang, toLang) {
+  let saw429 = false;
+
+  // Provider 1: Google Clients5 (Chrome Extension endpoint - reliable from datacenter IPs)
+  try {
+    const c1 = new AbortController();
+    const t1 = setTimeout(() => c1.abort(), 3500);
+    const u1 = `https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=${fromLang}&tl=${toLang}&q=${encodeURIComponent(text)}`;
+    const r1 = await fetch(u1, {
+      signal: c1.signal,
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }
+    });
+    clearTimeout(t1);
+
+    if (r1.status === 429) saw429 = true;
+    if (r1.ok) {
+      const data = await r1.json();
+      if (Array.isArray(data) && data[0]) {
+        const trans = Array.isArray(data[0]) ? data[0][0] : data[0];
+        if (trans && typeof trans === 'string') {
+          return { translated: trans.trim(), provider: 'google_clients5' };
+        }
+      }
+    }
+  } catch (e) {}
+
+  // Provider 2: MyMemory Translation API (Free tier fallback)
+  try {
+    const c2 = new AbortController();
+    const t2 = setTimeout(() => c2.abort(), 3500);
+    const u2 = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${fromLang}|${toLang}`;
+    const r2 = await fetch(u2, {
+      signal: c2.signal,
+      headers: { 'User-Agent': 'Mozilla/5.0' }
+    });
+    clearTimeout(t2);
+
+    if (r2.status === 429) saw429 = true;
+    if (r2.ok) {
+      const data = await r2.json();
+      const trans = data?.responseData?.translatedText;
+      if (trans && typeof trans === 'string' && !trans.toUpperCase().includes('QUERY LENGTH LIMIT EXCEEDED')) {
+        return { translated: trans.trim(), provider: 'mymemory' };
+      }
+    }
+  } catch (e) {}
+
+  // Provider 3: Google GTX
+  try {
+    const c3 = new AbortController();
+    const t3 = setTimeout(() => c3.abort(), 3000);
+    const u3 = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${fromLang}&tl=${toLang}&dt=t&q=${encodeURIComponent(text)}`;
+    const r3 = await fetch(u3, {
+      signal: c3.signal,
+      headers: { 'User-Agent': 'Mozilla/5.0' }
+    });
+    clearTimeout(t3);
+
+    if (r3.status === 429) saw429 = true;
+    if (r3.ok) {
+      const data = await r3.json();
+      if (Array.isArray(data?.[0])) {
+        const trans = data[0].map(part => part[0] || '').join('').trim();
+        if (trans) {
+          return { translated: trans, provider: 'google_gtx' };
+        }
+      }
+    }
+  } catch (e) {}
+
+  if (saw429) {
+    return { error: 'rate_limited', message: 'Translation service busy or rate-limited. Please wait a moment or use the Phrasebook.' };
+  }
+
+  return { error: 'service_unavailable', message: 'Translation service unavailable right now, try again or use the Phrasebook.' };
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -205,8 +282,19 @@ export default async function handler(req, res) {
   const tClean = (text || '').trim();
   const tLower = tClean.toLowerCase().replace(/[.?!]+$/, '');
 
+  // Empty string
+  if (!tClean) {
+    return res.status(200).json({
+      original: '',
+      translated: '',
+      from: fromLang,
+      to: toLang,
+      latency_ms: 0
+    });
+  }
+
   // Same language passthrough
-  if (fromLang === toLang && tClean) {
+  if (fromLang === toLang) {
     return res.status(200).json({
       original: text,
       translated: tClean,
@@ -223,6 +311,7 @@ export default async function handler(req, res) {
       translated: LOCAL_DICTIONARY[tLower][toLang],
       from: fromLang,
       to: toLang,
+      provider: 'local_dictionary',
       latency_ms: Date.now() - startTime
     });
   }
@@ -233,11 +322,12 @@ export default async function handler(req, res) {
       translated: LOCAL_DICTIONARY[tClean][toLang],
       from: fromLang,
       to: toLang,
+      provider: 'local_dictionary',
       latency_ms: Date.now() - startTime
     });
   }
 
-  // Tier 2: Check Phrasebook
+  // Tier 2: Check Phrasebook (0ms, 100% Offline)
   const phrasebook = getPhrasebook();
   for (const item of phrasebook) {
     const en = (item.english || '').toLowerCase().replace(/[.?!]+$/, '');
@@ -254,49 +344,45 @@ export default async function handler(req, res) {
           translated: candidate,
           from: fromLang,
           to: toLang,
+          provider: 'phrasebook',
           latency_ms: Date.now() - startTime
         });
       }
     }
   }
 
-  // Tier 3: Upstream Neural Translation (requires internet)
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3500);
+  // Tier 3: Upstream Translation (Multi-provider resilient engine)
+  const result = await performUpstreamTranslation(tClean, fromLang, toLang);
+  const latency = Date.now() - startTime;
 
-    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${fromLang}&tl=${toLang}&dt=t&q=${encodeURIComponent(tClean)}`;
-    const upstreamResp = await fetch(url, {
-      signal: controller.signal,
-      headers: { 'User-Agent': 'Mozilla/5.0' }
+  if (result.translated) {
+    return res.status(200).json({
+      original: text,
+      translated: result.translated,
+      from: fromLang,
+      to: toLang,
+      provider: result.provider,
+      latency_ms: latency
     });
-    clearTimeout(timeout);
-
-    if (upstreamResp.ok) {
-      const data = await upstreamResp.json();
-      if (data && Array.isArray(data[0])) {
-        const translated = data[0].map(part => part[0] || '').join('').trim();
-        if (translated) {
-          return res.status(200).json({
-            original: text,
-            translated,
-            from: fromLang,
-            to: toLang,
-            latency_ms: Date.now() - startTime
-          });
-        }
-      }
-    }
-  } catch (err) {
-    // Upstream failed or timed out
   }
 
-  // Honest offline message for novel sentences
-  return res.status(200).json({
+  if (result.error === 'rate_limited') {
+    return res.status(429).json({
+      original: text,
+      translated: result.message,
+      status: 'rate_limited',
+      from: fromLang,
+      to: toLang,
+      latency_ms: latency
+    });
+  }
+
+  return res.status(503).json({
     original: text,
-    translated: "Offline: Translation unavailable for unlisted sentences without internet. Please use the Phrasebook or known phrases.",
+    translated: result.message,
+    status: 'service_unavailable',
     from: fromLang,
     to: toLang,
-    latency_ms: Date.now() - startTime
+    latency_ms: latency
   });
 }

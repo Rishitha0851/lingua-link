@@ -122,6 +122,12 @@ body {
 }
 
 .status-badge.offline-limited {
+  border-color: rgba(234, 67, 53, 0.4);
+  background-color: rgba(234, 67, 53, 0.1);
+  color: #ea4335;
+}
+
+.status-badge.online-degraded {
   border-color: rgba(251, 188, 4, 0.5);
   background-color: rgba(251, 188, 4, 0.12);
   color: var(--accent);
@@ -136,6 +142,10 @@ body {
 
 .badge-dot.amber {
   background-color: var(--accent);
+}
+
+.badge-dot.red {
+  background-color: #ea4335;
 }
 
 .badge-dot.green {

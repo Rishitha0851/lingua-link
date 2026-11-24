@@ -227,48 +227,59 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // --- Live Connectivity Monitor ---
 function initConnectivityMonitor() {
-  window.addEventListener('online', () => updateConnectivity(true));
-  window.addEventListener('offline', () => updateConnectivity(false));
+  window.addEventListener('online', () => updateConnectivity('online'));
+  window.addEventListener('offline', () => updateConnectivity('offline'));
   checkServerConnectivity();
-  setInterval(checkServerConnectivity, 8000);
+  setInterval(checkServerConnectivity, 10000);
 }
 
 async function checkServerConnectivity() {
   if (!navigator.onLine) {
-    updateConnectivity(false);
+    updateConnectivity('offline');
     return;
   }
   try {
     const res = await fetch('/api/health');
     if (res.ok) {
       const data = await res.json();
-      updateConnectivity(data.internet_online !== false);
+      if (data.internet_online) {
+        updateConnectivity('online');
+      } else {
+        updateConnectivity('degraded');
+      }
     } else {
-      updateConnectivity(false);
+      updateConnectivity('degraded');
     }
   } catch(e) {
-    updateConnectivity(false);
+    updateConnectivity('degraded');
   }
 }
 
-function updateConnectivity(isOnline) {
-  state.isOnline = isOnline;
+function updateConnectivity(status) {
   const badge = document.getElementById('connectivityBadge');
   const dot = document.getElementById('connectivityDot');
   const text = document.getElementById('connectivityText');
 
   if (!badge || !dot || !text) return;
 
-  if (isOnline) {
+  if (status === 'offline' || !navigator.onLine) {
+    state.isOnline = false;
+    badge.className = 'status-badge offline-limited';
+    dot.className = 'badge-dot red';
+    text.textContent = 'Offline: phrasebook and known phrases only';
+    badge.title = 'No internet on this device: offline phrasebook and dictionary active.';
+  } else if (status === 'degraded') {
+    state.isOnline = true;
+    badge.className = 'status-badge online-degraded';
+    dot.className = 'badge-dot amber';
+    text.textContent = 'Online (Service degraded)';
+    badge.title = 'Device is online, but cloud translation is degraded or rate-limited. Offline phrasebook active.';
+  } else {
+    state.isOnline = true;
     badge.className = 'status-badge online';
     dot.className = 'badge-dot green';
     text.textContent = 'Online';
-    badge.title = 'Internet connection active: Speech recognition and full neural translation enabled.';
-  } else {
-    badge.className = 'status-badge offline-limited';
-    dot.className = 'badge-dot amber';
-    text.textContent = 'Offline: phrasebook and known phrases only';
-    badge.title = 'No internet: Speech recognition disabled; phrasebook and local dictionary active.';
+    badge.title = 'Internet connection active: full translation and speech recognition enabled.';
   }
 }
 
@@ -399,26 +410,26 @@ function toggleSpeech(speaker) {
   state.activeSpeaker = speaker;
   micBtn.classList.add('recording');
 
-  // Check offline state before invoking Chrome speech recognition
-  if (!navigator.onLine || state.isOnline === false) {
-    console.warn('[STT] Offline: Web Speech API requires internet connection.');
+  // 1. Detect whether browser supports SpeechRecognition at all
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    console.warn('[STT] SpeechRecognition unavailable in this browser environment.');
     micBtn.classList.remove('recording');
     state.activeSpeaker = null;
-    showSpeechError(speaker, 'Offline: Voice input requires internet (Chrome Web Speech API). Please type or use the Phrasebook.');
+    showSpeechError(speaker, 'Voice input is not supported in this browser. Please use Chrome on Android, or type instead.');
+    return;
+  }
+
+  // 2. Browser supports SpeechRecognition, but device has no internet
+  if (!navigator.onLine) {
+    console.warn('[STT] Offline: Voice input requires an active internet connection.');
+    micBtn.classList.remove('recording');
+    state.activeSpeaker = null;
+    showSpeechError(speaker, 'Voice input requires an active internet connection. Please type or use the Phrasebook.');
     return;
   }
 
   const langSelect = document.getElementById(`${speaker}LangSelect`);
-  const langCode = langSelect.value;
-
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    console.warn('[STT] Web Speech API unavailable in this browser environment.');
-    micBtn.classList.remove('recording');
-    state.activeSpeaker = null;
-    showSpeechError(speaker, 'Web Speech API is not supported in this browser. Please type or use Chrome.');
-    return;
-  }
 
   hideSpeechError(speaker);
 
@@ -586,28 +597,35 @@ async function translateText(text, fromLang, toLang) {
     }
   }
 
-  // If offline and not in local dictionary / phrasebook, display honest message immediately
-  if (!navigator.onLine || state.isOnline === false) {
-    console.warn('[TRANSLATE] Offline: Novel sentence translation requires internet.');
-    return "Offline: Translation unavailable for unlisted sentences without internet. Please use the Phrasebook or known phrases.";
+  // Case (a): Device itself has no internet
+  if (!navigator.onLine) {
+    console.warn('[TRANSLATE] Offline: Device has no internet connection.');
+    return "Offline: No internet connection. Please use the Phrasebook or known phrases.";
   }
 
-  // Tier 3: Call Server Translation API Endpoint (Requires upstream internet)
+  // Cases (b) & (c): Device is online -> Call Server API
   try {
     const url = `/api/translate?text=${encodeURIComponent(clean)}&from=${fromLang}&to=${toLang}`;
     const resp = await fetch(url);
-    if (resp.ok) {
-      const data = await resp.json();
-      if (data && data.translated) {
-        console.log(`[TRANSLATE API] Server returned: "${data.translated}"`);
-        return data.translated;
-      }
+    const data = await resp.json().catch(() => null);
+
+    // Case (c): Translation service rate limited
+    if (resp.status === 429 || data?.status === 'rate_limited') {
+      return "Translation service busy or rate-limited. Please wait a moment or use the Phrasebook.";
     }
+
+    // Success
+    if (resp.ok && data?.translated) {
+      console.log(`[TRANSLATE API] Server returned: "${data.translated}" (Provider: ${data.provider || 'cloud'})`);
+      return data.translated;
+    }
+
+    // Case (b): Service failed / 503
+    return "Translation service unavailable right now, try again or use the Phrasebook.";
   } catch (err) {
     console.warn('[TRANSLATE API] Upstream translate fetch failed:', err);
+    return "Translation service unavailable right now, try again or use the Phrasebook.";
   }
-
-  return "Offline: Translation unavailable for unlisted sentences without internet. Please use the Phrasebook or known phrases.";
 
 }
 
