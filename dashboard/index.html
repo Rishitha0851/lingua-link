@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lingua Link — Offline Real-Time Speech Translation Dashboard</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1a73e8">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body class="theme-dark">
+  <!-- Top App Bar -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="app-logo">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" x2="12" y1="19" y2="22"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="app-title">Lingua Link</h1>
+        <p class="app-subtitle">Real-Time Speech Translation with Offline Phrasebook</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="status-badge" id="connectivityBadge">
+        <span class="badge-dot" id="connectivityDot"></span>
+        <span class="badge-text" id="connectivityText">Online</span>
+      </div>
+      <div class="status-badge nearby demo-badge" id="nearbyBadge" title="Simulated single-device view (real two-device WebSocket link planned for Phase 1)">
+        <span class="badge-dot gray"></span>
+        <span class="badge-text">Nearby P2P: [DEMO - Single Device]</span>
+      </div>
+      <button class="theme-toggle" id="themeToggle" title="Toggle Theme">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5"/>
+          <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Navigation Bar -->
+  <nav class="app-nav">
+    <button class="nav-tab active" data-tab="conversation">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+      Conversation
+    </button>
+    <button class="nav-tab" data-tab="dsp">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      </svg>
+      Acoustic & DSP Studio
+    </button>
+    <button class="nav-tab" data-tab="phrasebook">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+      </svg>
+      Phrasebook
+    </button>
+    <button class="nav-tab" data-tab="packs">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+      </svg>
+      Language Packs
+    </button>
+    <button class="nav-tab" data-tab="logs">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+      Latency & Logs
+    </button>
+    <button class="nav-tab" data-tab="selftest">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="m9 11 3 3L22 4"/>
+        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+      </svg>
+      Self-Test Runner
+    </button>
+  </nav>
+
+  <!-- Main Content Container -->
+  <main class="main-container">
+
+    <!-- 1. CONVERSATION TAB -->
+    <section class="tab-pane active" id="tab-conversation">
+      <div class="split-screen-container">
+        <!-- Top Half: Local Service Provider (Rotatable 180deg) -->
+        <div class="convo-panel provider-panel" id="providerPanel">
+          <div class="panel-header">
+            <div class="speaker-info">
+              <span class="role-chip provider-chip">Local Provider</span>
+              <select class="lang-select" id="providerLangSelect">
+                <option value="hi" selected>Hindi (हिन्दी)</option>
+                <option value="te">Telugu (తెలుగు)</option>
+                <option value="ta">Tamil (தமிழ் - Text/TTS)</option>
+                <option value="en">English (India)</option>
+              </select>
+            </div>
+            <button class="icon-btn" id="rotateProviderBtn" title="Invert 180° for Face-to-Face">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+              </svg>
+              Rotate 180°
+            </button>
+          </div>
+          <div class="chat-display">
+            <!-- Incoming message from Tourist -->
+            <div class="speech-bubble incoming" id="providerIncomingBubble">
+              <p class="bubble-label" id="providerIncomingLabel">Translated from Tourist (Hindi):</p>
+              <p class="bubble-text highlight-trans" id="providerTranslatedText">नमस्ते! मैं आपकी क्या सहायता कर सकता हूँ?</p>
+              <p class="bubble-sub" id="providerOriginalText">Original (English): "Hello! How can I help you?"</p>
+              <div class="bubble-actions">
+                <button class="mini-btn speak-btn" id="providerReplayBtn" onclick="speakCurrentText('providerTranslatedText', 'providerLangSelect')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                  Replay TTS
+                </button>
+              </div>
+            </div>
+            <!-- Provider's own sent message -->
+            <div class="speech-bubble outgoing" id="providerOutgoingBubble" style="display:none;">
+              <p class="bubble-label">You said (Local Provider):</p>
+              <p class="bubble-text" id="providerSentText"></p>
+              <p class="bubble-sub" id="providerSendingAs"></p>
+            </div>
+          </div>
+          <div class="stt-error-banner" id="providerSttError" style="display:none;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span id="providerSttErrorText">Speech recognition failed, please type or retry.</span>
+          </div>
+          <div class="panel-controls">
+            <button class="mic-btn" id="providerMicBtn" title="Speak in Hindi">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" x2="12" y1="19" y2="22"/>
+              </svg>
+            </button>
+            <input type="text" class="text-input" id="providerTextInput" placeholder="Type message in Hindi (e.g. 'आप कैसे हैं?') or tap mic...">
+            <button class="send-btn" id="providerSendBtn">Send</button>
+          </div>
+        </div>
+
+        <div class="split-divider">
+          <span class="divider-label">Split-Screen Face-to-Face Mode</span>
+        </div>
+
+        <!-- Bottom Half: Tourist -->
+        <div class="convo-panel tourist-panel" id="touristPanel">
+          <div class="panel-header">
+            <div class="speaker-info">
+              <span class="role-chip tourist-chip">Tourist</span>
+              <select class="lang-select" id="touristLangSelect">
+                <option value="en" selected>English (India)</option>
+                <option value="hi">Hindi (हिन्दी)</option>
+                <option value="te">Telugu (తెలుగు)</option>
+                <option value="ta">Tamil (தமிழ் - Text/TTS)</option>
+              </select>
+            </div>
+            <div class="live-pill" id="touristLivePill">Ready</div>
+          </div>
+          <div class="chat-display">
+            <!-- Tourist's own sent message -->
+            <div class="speech-bubble outgoing" id="touristOutgoingBubble" style="display:none;">
+              <p class="bubble-label">You said (Tourist):</p>
+              <p class="bubble-text" id="touristSentText"></p>
+              <p class="bubble-sub" id="touristSendingAs"></p>
+            </div>
+            <!-- Incoming message from Provider -->
+            <div class="speech-bubble incoming" id="touristIncomingBubble">
+              <p class="bubble-label" id="touristIncomingLabel">Translated from Provider (English):</p>
+              <p class="bubble-text highlight-trans" id="touristTranslatedText">Welcome! How can I help you today?</p>
+              <p class="bubble-sub" id="touristOriginalText">Waiting for conversation...</p>
+              <div class="bubble-actions">
+                <button class="mini-btn speak-btn" id="touristReplayBtn" onclick="speakCurrentText('touristTranslatedText', 'touristLangSelect')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                  Replay TTS
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="stt-error-banner" id="touristSttError" style="display:none;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span id="touristSttErrorText">Speech recognition failed, please type or retry.</span>
+          </div>
+          <div class="panel-controls">
+            <button class="mic-btn" id="touristMicBtn" title="Speak in English">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" x2="12" y1="19" y2="22"/>
+              </svg>
+            </button>
+            <input type="text" class="text-input" id="touristTextInput" placeholder="Type message in English (e.g. 'How are you?') or tap mic...">
+            <button class="send-btn" id="touristSendBtn">Send</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. ACOUSTIC & DSP STUDIO TAB -->
+    <section class="tab-pane" id="tab-dsp">
+      <div class="dsp-grid">
+        <div class="card dsp-controls-card">
+          <div class="card-title">
+            <h3>Module 1: Capture & Noise Suppression</h3>
+            <div class="toggle-wrapper">
+              <span class="toggle-label">DSP Processing:</span>
+              <label class="switch">
+                <input type="checkbox" id="dspToggle" checked>
+                <span class="slider round"></span>
+              </label>
+              <span class="toggle-state" id="dspStateLabel">ENABLED</span>
+            </div>
+          </div>
+          <p class="card-desc">Real-time 16,000 Hz PCM processing with 80 Hz 2nd-order Butterworth High-Pass Biquad filter (Direct Form II Transposed) and an adaptive energy-envelope noise gate.</p>
+          
+          <div class="dsp-params">
+            <div class="param-row">
+              <label>High-Pass Cutoff:</label>
+              <span class="param-val">80.0 Hz (Butterworth Q=0.707)</span>
+            </div>
+            <div class="param-row">
+              <label>Noise Gate Threshold:</label>
+              <div class="slider-group">
+                <input type="range" id="gateSlider" min="-60" max="-20" value="-42" step="1">
+                <span class="param-val" id="gateValLabel">-42 dBFS</span>
+              </div>
+            </div>
+            <div class="param-row">
+              <label>Audio Engine Status:</label>
+              <span class="status-indicator online" id="audioEngineStatus">Active (Web Audio 16kHz)</span>
+            </div>
+          </div>
+
+          <div class="btn-row">
+            <button class="action-btn" id="startAudioBtn">Start Mic Capture</button>
+            <button class="action-btn outline" id="testToneBtn">Feed 30Hz Rumble + 1000Hz Tone</button>
+          </div>
+        </div>
+
+        <div class="card dsp-metrics-card">
+          <div class="card-title">
+            <h3>Real-Time Telemetry & SNR Gain</h3>
+            <span class="live-tag">LIVE METRICS</span>
+          </div>
+
+          <div class="metrics-grid">
+            <div class="metric-box">
+              <span class="metric-label">Input RMS</span>
+              <span class="metric-value" id="valInputRms">0.0000</span>
+              <span class="metric-unit" id="valInputDb">-inf dBFS</span>
+            </div>
+            <div class="metric-box">
+              <span class="metric-label">Output RMS</span>
+              <span class="metric-value" id="valOutputRms">0.0000</span>
+              <span class="metric-unit" id="valOutputDb">-inf dBFS</span>
+            </div>
+            <div class="metric-box highlight">
+              <span class="metric-label">Estimated SNR Gain</span>
+              <span class="metric-value" id="valSnrGain">+0.0 dB</span>
+              <span class="metric-unit">Active DSP benefit</span>
+            </div>
+            <div class="metric-box">
+              <span class="metric-label">DSP Latency</span>
+              <span class="metric-value" id="valDspLatency">0.00 μs</span>
+              <span class="metric-unit">Buffer computation</span>
+            </div>
+          </div>
+
+          <div class="level-meter-wrapper">
+            <div class="meter-labels">
+              <span>Input Level</span>
+              <span id="meterValText">0%</span>
+            </div>
+            <div class="meter-track">
+              <div class="meter-bar" id="meterBar"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card dsp-visualizer-card full-width">
+          <div class="card-title">
+            <h3>Live Oscilloscope & Spectral Waveform</h3>
+            <span class="sample-rate-tag">16,000 Hz Mono</span>
+          </div>
+          <canvas id="waveformCanvas" width="900" height="200"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. PHRASEBOOK TAB -->
+    <section class="tab-pane" id="tab-phrasebook">
+      <div class="phrasebook-header">
+        <div class="search-bar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" x2="21" y1="21" y2="16.65"/></svg>
+          <input type="text" id="phraseSearch" placeholder="Search phrases (e.g. taxi, station, price, UPI, water)...">
+        </div>
+        <div class="category-chips" id="categoryChips">
+          <button class="chip active" data-cat="all">All (17)</button>
+          <button class="chip" data-cat="Taxi & Auto">Taxi & Auto</button>
+          <button class="chip" data-cat="Price & Shopping">Price & Shopping</button>
+          <button class="chip" data-cat="Payment & UPI">Payment & UPI</button>
+          <button class="chip" data-cat="Directions">Directions</button>
+          <button class="chip" data-cat="Food & Water">Food & Water</button>
+          <button class="chip" data-cat="Hotel & Stay">Hotel & Stay</button>
+        </div>
+      </div>
+
+      <div class="phrase-grid" id="phraseGrid">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <!-- 4. LANGUAGE PACKS TAB -->
+    <section class="tab-pane" id="tab-packs">
+      <div class="demo-notice-banner">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div>
+          <strong>[DEMO / UI PREVIEW] Language-Pack Manager is simulated in this web dashboard.</strong>
+          <p>Real on-device file storage and background model downloading are currently implemented in the native Android build (<code>com.lingualink</code>). In-browser model management (IndexedDB) will be integrated in Phase 2 once offline models are approved. Action buttons below are disabled.</p>
+        </div>
+      </div>
+      <div class="packs-container">
+        <div class="card">
+          <div class="card-title">
+            <h3>Module 2: Offline STT Models (Vosk)</h3>
+            <span class="pack-badge demo-tag">[DEMO MOCK]</span>
+          </div>
+          <p class="card-desc">Architecture preview: On-device acoustic & language models for speech recognition without cloud connectivity.</p>
+          <div class="pack-list" id="sttPackList">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <h3>Module 2: Translation Packs (Google ML Kit)</h3>
+            <span class="pack-badge demo-tag">[DEMO MOCK]</span>
+          </div>
+          <p class="card-desc">Architecture preview: Offline neural translation vectors verified locally via RemoteModelManager.</p>
+          <div class="pack-list" id="transPackList">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. LATENCY & LOGS TAB -->
+    <section class="tab-pane" id="tab-logs">
+      <div class="logs-header">
+        <div class="stats-overview">
+          <div class="stat-pill">
+            <span class="stat-num" id="statAvgStt">184 ms</span>
+            <span class="stat-lbl">Avg STT</span>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-num" id="statAvgTrans">62 ms</span>
+            <span class="stat-lbl">Avg Translate</span>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-num" id="statAvgTts">95 ms</span>
+            <span class="stat-lbl">Avg TTS</span>
+          </div>
+          <div class="stat-pill highlight">
+            <span class="stat-num" id="statAvgTotal">341 ms</span>
+            <span class="stat-lbl">Avg Total Latency</span>
+          </div>
+        </div>
+        <div class="log-actions">
+          <button class="mini-btn outline" id="clearLogsBtn">Clear History</button>
+          <button class="mini-btn" id="exportLogsBtn">Export JSON</button>
+        </div>
+      </div>
+
+      <div class="log-table-wrapper">
+        <table class="log-table">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Pair</th>
+              <th>Source Utterance</th>
+              <th>Translated Text</th>
+              <th>STT</th>
+              <th>Translate</th>
+              <th>TTS</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody id="logTableBody">
+            <!-- Rendered via JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 6. SELF-TEST RUNNER TAB -->
+    <section class="tab-pane" id="tab-selftest">
+      <div class="selftest-card">
+        <div class="card-title">
+          <h3>Automated Offline Pipeline Self-Test</h3>
+          <button class="action-btn" id="runSelfTestBtn">Execute Pipeline Test</button>
+        </div>
+        <p class="card-desc">Synthesizes known audio utterances through the 80Hz Biquad filter, noise gate, speech recognition, offline translation matrix, and speech synthesis to verify end-to-end latency and accuracy.</p>
+
+        <div class="test-progress-bar">
+          <div class="progress-fill" id="testProgressFill"></div>
+        </div>
+
+        <div class="test-console" id="testConsole">
+          <p class="console-line info">[INIT] Lingua Link Self-Test Diagnostics Console Ready.</p>
+          <p class="console-line">[READY] Click "Execute Pipeline Test" to run the 5-stage benchmark suite.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="app-footer">
+    <span>Lingua Link v1.0.0 — Offline Speech Translation Suite (Android + Web Dashboard)</span>
+    <span>Android APK: <code class="apk-link">app/build/outputs/apk/debug/app-debug.apk</code></span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

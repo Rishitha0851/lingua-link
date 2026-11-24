@@ -1,0 +1,155 @@
+[
+  {
+    "id": "taxi_01",
+    "category": "Taxi & Auto",
+    "english": "How much to go to the Railway Station?",
+    "hindi": "रेलवे स्टेशन जाने का कितना लेंगे? (Railway station jaane ka kitna lenge?)",
+    "tamil": "ரயில் நிலையத்திற்கு செல்ல எவ்வளவு ஆகும்? (Rail nilayathirkku sella evvalavu aagum?)",
+    "telugu": "రైల్వే స్టేషన్ వెళ్ళడానికి ఎంత అవుతుంది? (Railway station velladaniki entha avuthundi?)",
+    "notes": "Ask auto/taxi driver for fare to railway station"
+  },
+  {
+    "id": "taxi_02",
+    "category": "Taxi & Auto",
+    "english": "Please turn on the meter.",
+    "hindi": "कृपया मीटर चालू कीजिए। (Kripya meter chaalu kijiye.)",
+    "tamil": "தயவுசெய்து மீட்டர் போடுங்கள். (Thayavuseithu meter podungal.)",
+    "telugu": "దయచేసి మీటర్ వేయండి. (Dayachesi meter veyandi.)",
+    "notes": "Request meter usage"
+  },
+  {
+    "id": "taxi_03",
+    "category": "Taxi & Auto",
+    "english": "Please stop here, this is my stop.",
+    "hindi": "यहाँ रोक दीजिए, यही मेरा पड़ाव है। (Yahan rok dijiye, yahi mera padaav hai.)",
+    "tamil": "இங்கே நிறுத்துங்கள், இது என் இடம். (Ingey niruthungal, idhu en idam.)",
+    "telugu": "ఇక్కడ ఆపండి, నేను ఇక్కడే దిగాలి. (Ikkada aapandi, nenu ikkade digali.)",
+    "notes": "Telling driver to halt"
+  },
+  {
+    "id": "price_01",
+    "category": "Price & Shopping",
+    "english": "How much does this cost?",
+    "hindi": "यह कितने का है? (Yeh kitne ka hai?)",
+    "tamil": "இதன் விலை என்ன? (Idhan vilai enna?)",
+    "telugu": "దీని ధర ఎంత? (Deeni dhara entha?)",
+    "notes": "Asking item price"
+  },
+  {
+    "id": "price_02",
+    "category": "Price & Shopping",
+    "english": "This is too expensive. Can you reduce the price?",
+    "hindi": "यह बहुत महंगा है। थोड़ा कम कर सकते हैं? (Yeh bahut mehenga hai. Thoda kam kar sakte hain?)",
+    "tamil": "இது மிகவும் விலை அதிகம். கொஞ்சம் குறைக்க முடியுமா? (Idhu migavum vilai adhigam. Konjam kuraikka mudiyuma?)",
+    "telugu": "ఇది చాలా ఎక్కువ ధర. కొంచెం తగ్గిస్తారా? (Idi chaala ekkuva dhara. Konchem thaggisthaaraa?)",
+    "notes": "Bargaining / asking for a discount"
+  },
+  {
+    "id": "price_03",
+    "category": "Price & Shopping",
+    "english": "What is your best and final price?",
+    "hindi": "आपका अंतिम दाम क्या है? (Aapka antim daam kya hai?)",
+    "tamil": "கடைசி விலை என்ன சொல்றீங்க? (Kadaisi vilai enna solreenga?)",
+    "telugu": "చివరికి ఎంతకు ఇస్తారు? (Chivariki enthaku isthaaru?)",
+    "notes": "Closing bargain"
+  },
+  {
+    "id": "pay_01",
+    "category": "UPI & Payment",
+    "english": "Do you accept Google Pay or PhonePe / UPI?",
+    "hindi": "क्या आप गूगल पे या यूपीआई लेते हैं? (Kya aap Google Pay ya UPI lete hain?)",
+    "tamil": "கூகுள் பே அல்லது யுபிஐ ஏற்கப்படுமா? (Google Pay alladhu UPI erkkappaduma?)",
+    "telugu": "గూగుల్ పే లేదా యూపీఐ తీసుకుంటారా? (Google Pay leda UPI theesukuntaaraa?)",
+    "notes": "Checking digital payment acceptance"
+  },
+  {
+    "id": "pay_02",
+    "category": "UPI & Payment",
+    "english": "Please show me your QR code scanner.",
+    "hindi": "कृपया अपना क्यूआर कोड दिखाइए। (Kripya apna QR code dikhaiye.)",
+    "tamil": "தயவுசெய்து உங்கள் க்யூஆர் குறியீட்டைக் காட்டுங்கள். (Thayavuseithu ungal QR kuriyittai kaattungal.)",
+    "telugu": "దయచేసి మీ క్యూఆర్ కోడ్ చూపించండి. (Dayachesi mee QR code choopinchandi.)",
+    "notes": "Scanning QR code for payment"
+  },
+  {
+    "id": "pay_03",
+    "category": "UPI & Payment",
+    "english": "I have completed the payment. Please check your phone.",
+    "hindi": "मैंने भुगतान कर दिया है। कृपया अपना फोन चेक करें। (Maine bhugtaan kar diya hai. Kripya apna phone check karein.)",
+    "tamil": "நான் பணம் செலுத்திவிட்டேன். உங்கள் போனை சரிபார்க்கவும். (Naan panam seluthivitten. Ungal phone-ai saripaarkkavum.)",
+    "telugu": "నేను చెల్లింపు చేసాను. మీ ఫోన్ చూడండి. (Nenu chellimpu chesaanu. Mee phone choodandi.)",
+    "notes": "Confirming transaction completion"
+  },
+  {
+    "id": "dir_01",
+    "category": "Directions",
+    "english": "Where is the nearest pharmacy or medical store?",
+    "hindi": "सबसे नजदीकी मेडिकल स्टोर या दवाई की दुकान कहाँ है? (Sabse nazdeeki medical store kahan hai?)",
+    "tamil": "அருகிலுள்ள மருந்தகம் எங்கே உள்ளது? (Arugilulla marundhagam engey ulladhu?)",
+    "telugu": "దగ్గరలోని మందుల షాప్ ఎక్కడ ఉంది? (Daggaraloni mandhula shop ekkada undi?)",
+    "notes": "Asking for pharmacy"
+  },
+  {
+    "id": "dir_02",
+    "category": "Directions",
+    "english": "Should I go straight or turn left?",
+    "hindi": "मुझे सीधा जाना है या बाएं मुड़ना है? (Mujhe seedha jaana hai ya baayein mudna hai?)",
+    "tamil": "நான் நேராக செல்ல வேண்டுமா அல்லது இடதுபுறம் திரும்ப வேண்டுமா? (Naan neeraaga sella venduma alladhu idadhupuram thirumba venduma?)",
+    "telugu": "నేను సూటిగా వెళ్ళాలా లేదా ఎడమవైపు తిరగాలా? (Nenu sootiga vellaalaa leda edamavaipu thiragaalaa?)",
+    "notes": "Asking turning direction"
+  },
+  {
+    "id": "food_01",
+    "category": "Food & Dining",
+    "english": "Is this food purely vegetarian?",
+    "hindi": "क्या यह खाना शुद्ध शाकाहारी है? (Kya yeh khaana shuddh shaakaahaari hai?)",
+    "tamil": "இந்த உணவு சுத்த சைவம் தானா? (Indha unavu sutha saivam thaanaa?)",
+    "telugu": "ఈ ఆహారం స్వచ్ఛమైన శాఖాహారమేనా? (Ee aahaaram swachamaina shaakhaahaaramenaa?)",
+    "notes": "Dietary verification"
+  },
+  {
+    "id": "food_02",
+    "category": "Food & Dining",
+    "english": "Please make it less spicy.",
+    "hindi": "कृपया मिर्च कम डालिए। (Kripya mirch kam daaliye.)",
+    "tamil": "தயவுசெய்து காரம் குறைவாக வையுங்கள். (Thayavuseithu kaaram kuraivaaga vaiyungal.)",
+    "telugu": "దయచేసి కారం తక్కువగా వేయండి. (Dayachesi kaaram thakkuvagaa veyandi.)",
+    "notes": "Requesting mild spice level"
+  },
+  {
+    "id": "food_03",
+    "category": "Food & Dining",
+    "english": "Please bring bottled drinking water and the bill.",
+    "hindi": "कृपया बोतलबंद पीने का पानी और बिल ले आइए। (Kripya bottled paani aur bill le aaiye.)",
+    "tamil": "பாட்டில் தண்ணீர் மற்றும் பில் கொண்டு வாருங்கள். (Bottle thanneer matrum bill kondu vaarungal.)",
+    "telugu": "బాటిల్ తాగునీరు మరియు బిల్లు తీసుకురండి. (Bottle thaaguneeru mariyu bill theesukurandi.)",
+    "notes": "Asking for water and bill"
+  },
+  {
+    "id": "hotel_01",
+    "category": "Hotel & Stay",
+    "english": "I have an online room booking under my name.",
+    "hindi": "मेरे नाम पर एक ऑनलाइन कमरा बुक है। (Mere naam par ek online kamra book hai.)",
+    "tamil": "என் பெயரில் ஒரு ஆன்லைன் அறை பதிவு செய்யப்பட்டுள்ளது. (En peyaril oru online arai pathivu seyyappattulladhu.)",
+    "telugu": "నా పేరు మీద ఆన్‌లైన్ రూమ్ బుకింగ్ ఉంది. (Naa peru meeda online room booking undi.)",
+    "notes": "Hotel reception check-in"
+  },
+  {
+    "id": "hotel_02",
+    "category": "Hotel & Stay",
+    "english": "What is the WiFi network name and password?",
+    "hindi": "वाई-फाई का नाम और पासवर्ड क्या है? (WiFi ka naam aur password kya hai?)",
+    "tamil": "வைஃபை பெயர் மற்றும் கடவுச்சொல் என்ன? (WiFi peyar matrum kadavuchol enna?)",
+    "telugu": "వైఫై పేరు మరియు పాస్‌వర్డ్ ఏమిటి? (WiFi peru mariyu password emiti?)",
+    "notes": "Asking WiFi credentials"
+  },
+  {
+    "id": "hotel_03",
+    "category": "Hotel & Stay",
+    "english": "What time is checkout tomorrow morning?",
+    "hindi": "कल सुबह चेक-आउट का क्या समय है? (Kal subah check-out ka kya samay hai?)",
+    "tamil": "நாளை காலை செக்-அவுட் நேரம் என்ன? (Naalai kaalai check-out neeram enna?)",
+    "telugu": "రేపు ఉదయం చెక్-అవుట్ సమయం ఎంత? (Repu udayam check-out samayam entha?)",
+    "notes": "Checkout schedule inquiry"
+  }
+]

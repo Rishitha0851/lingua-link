@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/manifest.json", "destination": "/dashboard/manifest.json" },
+    { "source": "/sw.js", "destination": "/dashboard/sw.js" },
+    { "source": "/icon-192.png", "destination": "/dashboard/icon-192.png" },
+    { "source": "/icon-512.png", "destination": "/dashboard/icon-512.png" },
+    { "source": "/phrasebook.json", "destination": "/dashboard/phrasebook.json" },
+    { "source": "/(.*)", "destination": "/dashboard/$1" }
+  ],
+  "headers": [
+    {
+      "source": "/sw.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache" },
+        { "key": "Service-Worker-Allowed", "value": "/" }
+      ]
+    }
+  ]
+}
